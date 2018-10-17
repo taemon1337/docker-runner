@@ -1,0 +1,112 @@
+#!/bin/bash
+if [ $# -eq 0 ]; then
+  if [ "$DOCKER_RUNNER" == "bootstrap" ]; then
+    config_file=${DOCKER_RUNNER_CONFIG:-$HOME/.docker/runner/config}
+    bin=${DOCKER_RUNNER_BIN:-$HOME/.local/bin}
+    self=$bin/docker-runner
+    mkdir
+
+    echo "Installing docker-runner"
+
+    if [ -f "$self" ]; then
+      echo "Removing existing version of docker-runner"
+      rm $self
+    fi
+
+    while IFS='' read -r line; do
+      echo "LINE: $line" >> $self
+    done < /dev/stdin
+
+    echo "Installed docker-runner to $self"
+  fi
+fi
+OWD=$(pwd)
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+cd $DIR
+
+_help() {
+  echo "Usage:        $0 <action> <options>"
+  echo "Description:  A standard way to run docker images as if it were natively installed."
+  echo "Actions:"
+  echo "  list        <list-options>        list installed docker-runner modules"
+  echo "  search      <search-options>      search available docker-runner modules"
+  echo "  upgrade                           upgrade docker-runner"
+  echo "  install     <module>              install module by name"
+  echo "    --version <version>             install module at specific tagged version or branch"
+  echo "    --sha     <sha256sum>           install module at specific sha256 hash id"
+  echo "  uninstall   <module>              uninstall module by name"
+  echo "Options:"
+  echo ""
+}
+
+_log() {
+  echo "[${2:-INFO}] $1"
+}
+
+_list() {
+  for file in $(ls $bin/docker-*); do
+    echo "[MODULE] $file"
+  done
+}
+
+_search() {
+  _log "search: $1"
+}
+
+_install() {
+  _log "install: $1"
+}
+
+_uninstall() {
+  _log "uninstall: $1"
+}
+
+_main() {
+  mkdir -p $bin
+  action="$1"
+  shift
+  case "$action" in
+    install)
+      _install "${@}"
+      ;;
+    uninstall)
+      _uninstall "${@}"
+      ;;
+    search)
+      _search "${@}"
+      ;;
+    list)
+      _list "${@}"
+      ;;
+    *)
+      _help
+      _log "Invalid Action: $action"
+      exit 1
+      ;;
+  esac
+}
+
+# Defaults
+config_file=${DOCKER_RUNNER_CONFIG:-$HOME/.docker/runner/config}
+bin=${DOCKER_RUNNER_BIN:-$HOME/.local/bin}
+
+
+args=()
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    --config)
+      config_file="$2"
+      shift
+      shift
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+_main "${args[@]}"
+cd $OWD
+exit 0
