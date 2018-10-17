@@ -1,22 +1,18 @@
 #!/bin/bash
 if [ $# -eq 0 ]; then
   if [ "$DOCKER_RUNNER" == "bootstrap" ]; then
+    echo "Installing docker-runner"
     config_file=${DOCKER_RUNNER_CONFIG:-$HOME/.docker/runner/config}
     bin=${DOCKER_RUNNER_BIN:-$HOME/.local/bin}
     self=$bin/docker-runner
-    mkdir
-
-    echo "Installing docker-runner"
-
-    if [ -f "$self" ]; then
-      echo "Removing existing version of docker-runner"
-      rm $self
-    fi
+    mkdir -p $bin
+    echo "#!/bin/bash" > $self
 
     while IFS='' read -r line; do
-      echo "LINE: $line" >> $self
+      echo "$line" >> $self
     done < /dev/stdin
 
+    chmod +x $self
     echo "Installed docker-runner to $self"
   fi
 fi
@@ -30,7 +26,7 @@ _help() {
   echo "Actions:"
   echo "  list        <list-options>        list installed docker-runner modules"
   echo "  search      <search-options>      search available docker-runner modules"
-  echo "  upgrade                           upgrade docker-runner"
+  echo "  upgrade                           aka 'docker-runner install docker-runner'"
   echo "  install     <module>              install module by name"
   echo "    --version <version>             install module at specific tagged version or branch"
   echo "    --sha     <sha256sum>           install module at specific sha256 hash id"
@@ -71,6 +67,9 @@ _main() {
       ;;
     uninstall)
       _uninstall "${@}"
+      ;;
+    upgrade)
+      _install docker-runner
       ;;
     search)
       _search "${@}"
