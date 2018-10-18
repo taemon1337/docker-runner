@@ -1,0 +1,44 @@
+#!/bin/bash
+OWD=$(pwd)
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+cd $DIR
+
+_main() {
+  action="$1"
+  shift
+  case "$action" in
+    start)
+      ;;
+    stop)
+      ;;
+    restart)
+      ;;
+    helm)
+      ;;
+    *)
+      echo "Invalid action: $action"
+      _help
+      exit 1
+  esac
+}
+
+image="kubernetes/tiller:latest"
+
+args=()
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    --image)
+      image="$2"
+      shift
+      shift
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+_main "${args[@]}"
+cd $OWD

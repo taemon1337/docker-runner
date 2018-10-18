@@ -64,7 +64,7 @@ _install() {
   _log "install: $1"
   local registry=$(_get_registry $1 $2)
   echo "Downloading: $registry/docker-$1"
-  curl -L $registry/docker-$1 > $bin/docker-$1
+  curl -sL $registry/docker-$1 > $bin/docker-$1
   echo "alias $1=docker-$1" >> $bashpr
   chmod +x $bin/docker-$1
 }
@@ -78,6 +78,7 @@ _get_registry() {
   name="$1"
   branch="${2:-master}"
   repo=$(grep "DOCKER_RUNNER_REGISTRY" $config_file | cut -d'=' -f2)
+  # curl -L https://github.com/taemon1337/docker-runner/raw/master/helm/docker-helm
   echo "https://$repo/raw/$branch/$name"
 }
 
