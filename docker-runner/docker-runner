@@ -1,11 +1,21 @@
 #!/bin/bash
 if [ $# -eq 0 ]; then
   if [ "$DOCKER_RUNNER" == "bootstrap" ]; then
+    _init() {
+      config_file=${DOCKER_RUNNER_CONFIG:-$HOME/.docker/runner/config}
+      bin=${DOCKER_RUNNER_BIN:-$HOME/.local/bin}
+      self=$bin/docker-runner
+      mkdir -p $bin
+      mkdir -p $(dirname $config_file)
+      touch $config_file
+
+      if grep -qv "DOCKER_RUNNER_REGISTRY=" $config_file; then
+        echo "DOCKER_RUNNER_REGISTRY=https://github.com/taemon1337/docker-runner" >> $config_file
+      fi
+    }
+
     echo "Installing docker-runner"
-    config_file=${DOCKER_RUNNER_CONFIG:-$HOME/.docker/runner/config}
-    bin=${DOCKER_RUNNER_BIN:-$HOME/.local/bin}
-    self=$bin/docker-runner
-    mkdir -p $bin
+    _init
     echo "#!/bin/bash" > $self
 
     while IFS='' read -r line; do
@@ -47,18 +57,45 @@ _list() {
 
 _search() {
   _log "search: $1"
+  echo "search not yet implemented."
 }
 
 _install() {
   _log "install: $1"
+  local registry=$(_get_registry $1 $2)
+  echo "Downloading: $registry/docker-$1"
+  curl -L $registry/docker-$1 > $bin/docker-$1
+  echo "alias $1=docker-$1" >> $bashpr
+  chmod +x $bin/docker-$1
 }
 
 _uninstall() {
   _log "uninstall: $1"
+  rm $bin/docker-$1
+}
+
+_get_registry() {
+  name="$1"
+  branch="${2:-master}"
+  repo=$(grep "DOCKER_RUNNER_REGISTRY" $config_file | cut -d'=' -f2)
+  echo "https://$repo/raw/$branch/$name"
+}
+
+_init() {
+  mkdir -p $bin
+  mkdir -p $(dirname $config_file)
+  touch $config_file
+
+  if grep -q "DOCKER_RUNNER_REGISTRY=" $config_file; then
+    :
+  else
+    echo "DOCKER_RUNNER_REGISTRY=github.com/taemon1337/docker-runner" >> $config_file
+  fi
+
 }
 
 _main() {
-  mkdir -p $bin
+  _init
   action="$1"
   shift
   case "$action" in
@@ -88,7 +125,7 @@ _main() {
 # Defaults
 config_file=${DOCKER_RUNNER_CONFIG:-$HOME/.docker/runner/config}
 bin=${DOCKER_RUNNER_BIN:-$HOME/.local/bin}
-
+bashpf=$HOME/.bash_profile
 
 args=()
 while [[ $# -gt 0 ]]; do
